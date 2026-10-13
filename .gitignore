@@ -1,0 +1,13 @@
+# 环境与密钥（真实 .env 绝不提交）
+.env
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+# 本地数据
+*.db
+data/labels/*
+!data/labels/.gitkeep
+# 前端
+frontend/node_modules/
+frontend/dist/
