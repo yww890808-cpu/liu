@@ -19,7 +19,9 @@ def db():
         dbapi_conn.execute("PRAGMA foreign_keys=ON")
 
     Base.metadata.create_all(engine)
-    session = sessionmaker(bind=engine, expire_on_commit=False)()
+    factory = sessionmaker(bind=engine, expire_on_commit=False)
+    session = factory()
+    session.factory = factory  # 供需要独立会话的代码（如 api_logs 写入）使用
     yield session
     session.close()
     engine.dispose()

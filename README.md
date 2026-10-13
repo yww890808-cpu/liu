@@ -2,7 +2,7 @@
 
 内部使用的 Ozon FBS 店铺自动化后台：订单拉取、发货处理、库存同步。需求见 MVP 需求文档。
 
-> 当前进度：**阶段 1 —— 项目骨架**（配置、数据模型、迁移、docker-compose）。
+> 当前进度：阶段 1（项目骨架）、阶段 2（Ozon API 封装层）已完成。接口清单见 `docs/ozon-endpoints.md`（待确认）。
 
 ## 目录结构
 
@@ -11,7 +11,7 @@ app/
   main.py          FastAPI 入口（/health）
   config.py        配置（pydantic-settings，读取 .env）
   db/              数据库引擎、会话、模型
-  ozon/            Ozon API 封装（阶段 2）
+  ozon/            Ozon API 封装：client.py（限流/重试/日志）、errors.py、ratelimit.py
   services/        业务逻辑（阶段 3–6）
   api/             后台接口路由
   tasks/           Celery 应用与定时任务

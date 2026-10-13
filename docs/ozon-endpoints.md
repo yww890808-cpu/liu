@@ -1,0 +1,15 @@
+# Ozon 接口清单（待确认）
+
+> **来源说明**：开发环境的网络策略屏蔽了 docs.ozon.ru，无法直接查阅官方文档。
+> 下表根据开源客户端 diphantxm/ozon-api-client（最近提交 2025-10-20）的源码整理，
+> 并经网络搜索交叉核对。**请在官方文档中逐项核对后再进入阶段 3。**
+
+| # | 能力 | 方法与路径 | 关键参数 / 说明 |
+|---|---|---|---|
+| 1 | FBS 订单列表 | `POST /v3/posting/fbs/list` | `filter.since` / `filter.to`（时间范围）、`filter.status`、`limit`、`offset`；分页拉取 |
+| 2 | 单个订单详情 | `POST /v3/posting/fbs/get` | `posting_number`，可选 `with` 附加字段 |
+| 3 | 备货 / 打包确认 | `POST /v4/posting/fbs/ship` | `posting_number` + `packages[].products[]`（`product_id` 即 SKU、`quantity`）；默认一个订单一个包裹 |
+| 4 | 获取面单 PDF | `POST /v2/posting/fbs/package-label` | `posting_number[]`，同步返回 PDF。批量时有异步版：`/v2/posting/fbs/package-label/create` + `/v1/posting/fbs/package-label/get` |
+| 5 | 设置物流单号 | `POST /v2/fbs/posting/tracking-number/set` | `tracking_numbers[]`：`posting_number` + `tracking_number`。**一般只适用于 rFBS / 非 Ozon 物流** |
+| 6 | 商品列表 | `POST /v3/product/list` + `POST /v3/product/info/list` | 前者分页拿 `product_id`/`offer_id`（`last_id` 游标），后者按 ID 批量取 `sku`、名称 |
+| 7 | 更新库存 | `POST /v2/products/stocks` | `stocks[]`：`offer_id` / `product_id`、`stock`、**`warehouse_id`（必填）**；仓库 ID 来自 `POST /v1/warehouse/list`。旧接口 `/v1/product/import/stocks` 已弃用 |
