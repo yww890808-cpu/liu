@@ -2,7 +2,7 @@
 
 内部使用的 Ozon FBS 店铺自动化后台：订单拉取、发货处理、库存同步。需求见 MVP 需求文档。
 
-> 当前进度：阶段 1（项目骨架）、阶段 2（Ozon API 封装层）已完成。接口清单见 `docs/ozon-endpoints.md`（待确认）。
+> 当前进度：阶段 1–3 已完成（骨架、Ozon API 封装、店铺管理 + 商品/仓库同步）。接口清单见 `docs/ozon-endpoints.md`（待确认）。
 
 ## 目录结构
 
@@ -30,7 +30,12 @@ python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().d
 
 docker compose up -d --build
 curl http://localhost:8000/health      # {"status":"ok","dry_run":true}
+
+# 创建后台登录账号（交互输入密码）
+docker compose exec api python -m app.cli create-user admin
 ```
+
+接口文档（可直接在浏览器里试用）：http://localhost:8000/docs ，先点右上角 Authorize 登录。
 
 会启动 5 个服务：`postgres`、`redis`、`api`（启动前自动执行 `alembic upgrade head`）、`worker`（Celery）、`beat`（Celery 定时调度）。
 compose 中会覆盖 `DATABASE_URL` / `REDIS_URL` 指向容器内服务，`.env` 里的这两项只用于本地开发。
@@ -52,6 +57,20 @@ pytest
 celery -A app.tasks.celery_app worker -l info
 celery -A app.tasks.celery_app beat -l info
 ```
+
+## 已有接口
+
+| 接口 | 说明 |
+|---|---|
+| `POST /api/auth/login` | 登录，返回 JWT |
+| `GET/POST /api/shops` | 店铺列表 / 添加店铺（Api-Key 加密存储，返回时脱敏） |
+| `PATCH/DELETE /api/shops/{id}` | 修改（名称、Api-Key、启用状态）/ 删除店铺 |
+| `POST /api/shops/{id}/test` | 测试店铺凭证是否可用（只读接口） |
+| `POST /api/shops/{id}/sync` | 后台同步该店铺的仓库与商品列表 |
+| `GET /api/shops/{id}/warehouses` | 仓库列表；`PATCH .../warehouses/{wid}` 启用/停用某仓库的库存推送 |
+| `GET /api/shops/{id}/products` | 商品列表（分页、按货号/名称搜索） |
+
+定时任务：每天 `PRODUCT_SYNC_HOUR` 点（UTC）同步所有启用店铺的仓库与商品。所有任务结果写入 `task_logs`，所有 Ozon 调用写入 `api_logs`。
 
 ## 数据库迁移
 

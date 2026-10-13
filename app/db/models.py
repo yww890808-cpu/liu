@@ -57,9 +57,45 @@ class Product(Base):
     ozon_product_id: Mapped[int | None] = mapped_column(BigInteger)
     sku: Mapped[int | None] = mapped_column(BigInteger, index=True)
     name: Mapped[str | None] = mapped_column(String(512))
+    archived: Mapped[bool] = mapped_column(Boolean, default=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+    stocks: Mapped[list["ProductStock"]] = relationship(
+        back_populates="product", cascade="all, delete-orphan"
+    )
+
+
+class Warehouse(Base):
+    """店铺的 FBS 仓库（从 Ozon 同步）。库存按仓库维护。"""
+
+    __tablename__ = "warehouses"
+    __table_args__ = (UniqueConstraint("shop_id", "ozon_warehouse_id", name="uq_warehouses_shop_wh"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    shop_id: Mapped[int] = mapped_column(ForeignKey("shops.id", ondelete="CASCADE"), index=True)
+    ozon_warehouse_id: Mapped[int] = mapped_column(BigInteger)
+    name: Mapped[str] = mapped_column(String(255))
+    status: Mapped[str | None] = mapped_column(String(64))  # Ozon 侧状态，如 created / disabled
+    # 本地开关：关闭后不向该仓库推送库存
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class ProductStock(Base):
+    """商品在某个仓库的库存。"""
+
+    __tablename__ = "product_stocks"
+    __table_args__ = (UniqueConstraint("product_id", "warehouse_id", name="uq_stocks_product_wh"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id", ondelete="CASCADE"), index=True)
+    warehouse_id: Mapped[int] = mapped_column(ForeignKey("warehouses.id", ondelete="CASCADE"), index=True)
     local_stock: Mapped[int] = mapped_column(Integer, default=0)  # 本地维护的库存
     synced_stock: Mapped[int | None] = mapped_column(Integer)  # 最近一次成功推送到 Ozon 的库存
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+    product: Mapped[Product] = relationship(back_populates="stocks")
+    warehouse: Mapped[Warehouse] = relationship()
 
 
 class Order(Base):

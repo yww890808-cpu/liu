@@ -1,20 +1,11 @@
 """Api-Key 加密与脱敏。"""
 import pytest
-from cryptography.fernet import Fernet
 
 from app.config import get_settings
 from app.utils import crypto
 
 
-@pytest.fixture
-def fernet_key(monkeypatch):
-    monkeypatch.setenv("FERNET_KEY", Fernet.generate_key().decode())
-    get_settings.cache_clear()
-    yield
-    get_settings.cache_clear()
-
-
-def test_encrypt_roundtrip(fernet_key):
+def test_encrypt_roundtrip():
     token = crypto.encrypt("my-api-key")
     assert token != "my-api-key"
     assert crypto.decrypt(token) == "my-api-key"
@@ -28,6 +19,6 @@ def test_missing_key_raises(monkeypatch):
     get_settings.cache_clear()
 
 
-def test_mask():
+def test_mask_value():
     assert crypto.mask("abcd1234efgh") == "abcd****"
     assert crypto.mask("") == ""
