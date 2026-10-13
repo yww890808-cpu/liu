@@ -12,5 +12,6 @@
 | 4 | 获取面单 PDF | `POST /v2/posting/fbs/package-label` | `posting_number[]`（最多 20 个），返回 PDF（兼容 JSON+base64 格式）；建议备货后 45–60 秒再获取，未就绪返回 not ready。批量时有异步版：`/v2/posting/fbs/package-label/create` + `/v1/posting/fbs/package-label/get` |
 | 5 | 设置物流单号 | `POST /v2/fbs/posting/tracking-number/set` | `tracking_numbers[]`：`posting_number` + `tracking_number`。**本项目使用 Ozon 物流，不调用此接口**；单号从订单数据的 `tracking_number` 读取 |
 | 6 | 商品列表 | `POST /v3/product/list` + `POST /v3/product/info/list` | 前者分页拿 `product_id`/`offer_id`（`last_id` 游标），后者按 ID 批量取 `sku`、名称 |
-| 7 | 更新库存 | `POST /v2/products/stocks` | `stocks[]`：`offer_id` / `product_id`、`stock`、**`warehouse_id`（必填）**；仓库 ID 来自 `POST /v1/warehouse/list`。旧接口 `/v1/product/import/stocks` 已弃用 |
+| 7 | 更新库存 | `POST /v2/products/stocks` | `stocks[]`：`offer_id` / `product_id`、`stock`、**`warehouse_id`（必填）**；仓库 ID 来自 `POST /v1/warehouse/list`。旧接口 `/v1/product/import/stocks` 已弃用。每次最多 100 条；同一商品同一仓库每 2 分钟只能更新一次 |
 | 8 | 仓库列表 | `POST /v1/warehouse/list` | 无参数；返回 `result[]`：`warehouse_id`、`name`、`status`。也用于“测试连接” |
+| 9 | 读取 FBS 仓库库存 | `POST /v1/product/info/stocks-by-warehouse/fbs` | `sku[]`；返回 `result[]`：`sku`、`warehouse_id`、`present`（总数）、`reserved`（预留） |

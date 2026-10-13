@@ -83,6 +83,8 @@ def test_sync_task_end_to_end(api, db, monkeypatch):
                                                       "last_id": ""}},
         endpoints.PRODUCT_INFO_LIST: lambda b: {"items": [{"id": 5, "offer_id": "SKU-5",
                                                            "sku": 999, "name": "杯子"}]},
+        endpoints.FBS_STOCKS_BY_WAREHOUSE: lambda b: {"result": [
+            {"sku": 999, "warehouse_id": 77, "present": 12, "reserved": 2}]},
     })
     monkeypatch.setattr("app.tasks.catalog.ozon_client_for", lambda shop: fake.client())
 
@@ -93,7 +95,7 @@ def test_sync_task_end_to_end(api, db, monkeypatch):
 
     log = db.query(TaskLog).one()
     assert log.task_name == "sync_catalog" and log.status == "success"
-    assert "新增 1" in log.message
+    assert "新增 1" in log.message and "首次初始化 1" in log.message
 
 
 def test_sync_failure_logged(api, db, monkeypatch):

@@ -3,7 +3,7 @@ from sqlalchemy import select
 
 from app.db.models import Shop
 from app.db.session import SessionLocal
-from app.services import catalog
+from app.services import catalog, stock
 from app.services.shops import ozon_client_for
 from app.services.task_log import run_logged
 from app.tasks.celery_app import celery_app
@@ -20,9 +20,10 @@ def sync_shop_catalog(shop_id: int) -> str:
             try:
                 wh = catalog.sync_warehouses(db, shop, client)
                 pr = catalog.sync_products(db, shop, client)
+                st = stock.refresh_from_ozon(db, shop, client)
             finally:
                 client.close()
-            return f"仓库：{wh}；商品：{pr}"
+            return f"仓库：{wh}；商品：{pr}；库存：{st}"
 
     return run_logged("sync_catalog", shop_id, job)
 

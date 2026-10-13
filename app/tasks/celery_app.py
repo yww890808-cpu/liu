@@ -7,13 +7,17 @@ from app.config import get_settings
 settings = get_settings()
 
 celery_app = Celery("ozon", broker=settings.redis_url, backend=settings.redis_url,
-                    include=["app.tasks.catalog", "app.tasks.orders", "app.tasks.shipping"])
+                    include=["app.tasks.catalog", "app.tasks.orders", "app.tasks.shipping", "app.tasks.stock"])
 celery_app.conf.update(timezone="UTC", task_acks_late=True, worker_prefetch_multiplier=1)
 
 celery_app.conf.beat_schedule = {
     "sync-orders": {
         "task": "orders.sync_all",
         "schedule": settings.order_sync_interval_minutes * 60,
+    },
+    "push-stock": {
+        "task": "stock.push_all",
+        "schedule": settings.stock_push_interval_minutes * 60,
     },
     "sync-catalog-daily": {
         "task": "catalog.sync_all",

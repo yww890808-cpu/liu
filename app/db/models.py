@@ -90,8 +90,16 @@ class ProductStock(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id", ondelete="CASCADE"), index=True)
     warehouse_id: Mapped[int] = mapped_column(ForeignKey("warehouses.id", ondelete="CASCADE"), index=True)
-    local_stock: Mapped[int] = mapped_column(Integer, default=0)  # 本地维护的库存
-    synced_stock: Mapped[int | None] = mapped_column(Integer)  # 最近一次成功推送到 Ozon 的库存
+    # 本地维护的可售库存；为空表示从未设置，此时不会推送
+    local_stock: Mapped[int | None] = mapped_column(Integer)
+    # 最近一次成功推送到 Ozon 的值；local_stock 与它不同时才推送
+    synced_stock: Mapped[int | None] = mapped_column(Integer)
+    # 最近一次从 Ozon 读到的可售库存（总数 - 预留）与预留数，仅用于展示和首次导入
+    ozon_stock: Mapped[int | None] = mapped_column(Integer)
+    ozon_reserved: Mapped[int | None] = mapped_column(Integer)
+    ozon_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    pushed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    push_error: Mapped[str | None] = mapped_column(Text)  # 最近一次推送失败原因
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
     product: Mapped[Product] = relationship(back_populates="stocks")
