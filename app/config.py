@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     product_sync_hour: int = 3
 
     label_dir: str = "./data/labels"
+    # 备货后 Ozon 需要一段时间生成面单：首次获取延迟与最多尝试次数
+    label_fetch_delay_sec: int = 60
+    label_fetch_max_tries: int = 5
 
 
 @lru_cache

@@ -143,7 +143,8 @@ class Shipment(Base):
     order_id: Mapped[int] = mapped_column(ForeignKey("orders.id", ondelete="CASCADE"), unique=True)
     tracking_number: Mapped[str | None] = mapped_column(String(128))
     label_path: Mapped[str | None] = mapped_column(String(512))
-    shipped_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    label_error: Mapped[str | None] = mapped_column(Text)  # 最近一次获取面单失败的原因
+    shipped_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))  # 备货确认时间
 
     order: Mapped[Order] = relationship(back_populates="shipment")
 

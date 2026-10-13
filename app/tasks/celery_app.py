@@ -7,7 +7,7 @@ from app.config import get_settings
 settings = get_settings()
 
 celery_app = Celery("ozon", broker=settings.redis_url, backend=settings.redis_url,
-                    include=["app.tasks.catalog", "app.tasks.orders"])
+                    include=["app.tasks.catalog", "app.tasks.orders", "app.tasks.shipping"])
 celery_app.conf.update(timezone="UTC", task_acks_late=True, worker_prefetch_multiplier=1)
 
 celery_app.conf.beat_schedule = {

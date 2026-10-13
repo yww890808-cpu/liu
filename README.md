@@ -2,7 +2,7 @@
 
 内部使用的 Ozon FBS 店铺自动化后台：订单拉取、发货处理、库存同步。需求见 MVP 需求文档。
 
-> 当前进度：阶段 1–4 已完成（骨架、Ozon API 封装、店铺管理 + 商品/仓库同步、订单拉取）。接口清单见 `docs/ozon-endpoints.md`（待确认）。
+> 当前进度：阶段 1–5 已完成（骨架、Ozon API 封装、店铺管理 + 商品/仓库同步、订单拉取、发货）。接口清单见 `docs/ozon-endpoints.md`（待确认）。
 
 ## 目录结构
 
@@ -74,11 +74,34 @@ celery -A app.tasks.celery_app beat -l info
 | `GET /api/orders/statuses` | 各状态订单数 |
 | `GET /api/orders/{id}` | 订单详情（含商品明细和 Ozon 原始数据） |
 | `POST /api/orders/{id}/refresh` | 从 Ozon 重新获取该订单 |
+| `POST /api/orders/{id}/ship` | 备货确认；不传 `packages` 为整单一包，拆包时传每个包裹的 `[{sku, quantity}]` |
+| `POST /api/orders/ship-batch` | 批量备货（每单一包），逐单返回结果 |
+| `GET /api/orders/{id}/label` | 下载面单 PDF（本地没有时立即向 Ozon 获取） |
+| `POST /api/orders/labels` | 批量面单：同一店铺最多 20 单，合并为一个 PDF |
 
 定时任务：
 - 每 `ORDER_SYNC_INTERVAL_MINUTES` 分钟拉取订单：最近 `ORDER_SYNC_LOOKBACK_DAYS` 天内状态有变化、且创建于最近 `ORDER_SYNC_CREATED_WINDOW_DAYS` 天内的货件；按货件号去重。
 - 每天 `PRODUCT_SYNC_HOUR` 点（UTC）同步所有启用店铺的仓库与商品。
 所有任务结果写入 `task_logs`，所有 Ozon 调用写入 `api_logs`。
+
+## 发货流程（使用 Ozon 物流）
+
+1. 备货确认：校验订单为“待备货”、各包裹商品数量合计与订单一致后提交。拆包后 Ozon 会为每个包裹生成新货件号，系统自动拉取并分别记录。
+2. 面单：备货成功后等待 `LABEL_FETCH_DELAY_SEC` 秒自动获取并保存到 `LABEL_DIR`；Ozon 返回“未就绪”时按同样间隔重试，最多 `LABEL_FETCH_MAX_TRIES` 次。
+3. 物流单号由 Ozon 生成，随订单同步显示，无需回传。
+4. 需要报关单号或商品标识码的订单不自动备货，提示到 Ozon 后台处理。
+
+**`DRY_RUN=true`（默认）时备货只在 `task_logs`（`ship_dry_run`）中记录将要提交的内容，不调用 Ozon。**
+
+## 路线图
+
+| 阶段 | 内容 | 状态 |
+|---|---|---|
+| 1–5 | 骨架、API 封装、店铺/商品、订单、发货 | 已完成 |
+| 6 | 库存同步（按仓库） | 待开发 |
+| 7 | 管理后台前端 | 待开发 |
+| 8 | 整体测试、部署文档 | 待开发 |
+| 9 | 选品：接入第三方 Ozon 数据服务（如 MPStats、Moneyplace），每日查看全平台商品销量 | MVP 完成后开发，需先选定服务商并提供 API 文档与密钥 |
 
 ## 数据库迁移
 

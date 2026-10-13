@@ -8,9 +8,9 @@
 |---|---|---|---|
 | 1 | FBS 订单列表 | `POST /v3/posting/fbs/list` | `filter.since` / `filter.to`（创建时间，最长 1 年）、`filter.last_changed_status_date.from/to`（状态变更时间）、`limit`（最大 50）、`offset`；响应 `result.has_next` 表示还有下一页 |
 | 2 | 单个订单详情 | `POST /v3/posting/fbs/get` | `posting_number`，可选 `with` 附加字段 |
-| 3 | 备货 / 打包确认 | `POST /v4/posting/fbs/ship` | `posting_number` + `packages[].products[]`（`product_id` 即 SKU、`quantity`）；默认一个订单一个包裹 |
-| 4 | 获取面单 PDF | `POST /v2/posting/fbs/package-label` | `posting_number[]`，同步返回 PDF。批量时有异步版：`/v2/posting/fbs/package-label/create` + `/v1/posting/fbs/package-label/get` |
-| 5 | 设置物流单号 | `POST /v2/fbs/posting/tracking-number/set` | `tracking_numbers[]`：`posting_number` + `tracking_number`。**一般只适用于 rFBS / 非 Ozon 物流** |
+| 3 | 备货 / 打包确认 | `POST /v4/posting/fbs/ship` | `posting_number` + `packages[].products[]`（`product_id` 即 SKU、`quantity`）+ `with.additional_data`；返回 `result[]` 为拆包后的货件号 |
+| 4 | 获取面单 PDF | `POST /v2/posting/fbs/package-label` | `posting_number[]`（最多 20 个），返回 PDF（兼容 JSON+base64 格式）；建议备货后 45–60 秒再获取，未就绪返回 not ready。批量时有异步版：`/v2/posting/fbs/package-label/create` + `/v1/posting/fbs/package-label/get` |
+| 5 | 设置物流单号 | `POST /v2/fbs/posting/tracking-number/set` | `tracking_numbers[]`：`posting_number` + `tracking_number`。**本项目使用 Ozon 物流，不调用此接口**；单号从订单数据的 `tracking_number` 读取 |
 | 6 | 商品列表 | `POST /v3/product/list` + `POST /v3/product/info/list` | 前者分页拿 `product_id`/`offer_id`（`last_id` 游标），后者按 ID 批量取 `sku`、名称 |
 | 7 | 更新库存 | `POST /v2/products/stocks` | `stocks[]`：`offer_id` / `product_id`、`stock`、**`warehouse_id`（必填）**；仓库 ID 来自 `POST /v1/warehouse/list`。旧接口 `/v1/product/import/stocks` 已弃用 |
 | 8 | 仓库列表 | `POST /v1/warehouse/list` | 无参数；返回 `result[]`：`warehouse_id`、`name`、`status`。也用于“测试连接” |
