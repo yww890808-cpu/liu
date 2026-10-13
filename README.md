@@ -2,7 +2,7 @@
 
 内部使用的 Ozon FBS 店铺自动化后台：订单拉取、发货处理、库存同步。需求见 MVP 需求文档。
 
-> 当前进度：阶段 1–3 已完成（骨架、Ozon API 封装、店铺管理 + 商品/仓库同步）。接口清单见 `docs/ozon-endpoints.md`（待确认）。
+> 当前进度：阶段 1–4 已完成（骨架、Ozon API 封装、店铺管理 + 商品/仓库同步、订单拉取）。接口清单见 `docs/ozon-endpoints.md`（待确认）。
 
 ## 目录结构
 
@@ -69,8 +69,16 @@ celery -A app.tasks.celery_app beat -l info
 | `POST /api/shops/{id}/sync` | 后台同步该店铺的仓库与商品列表 |
 | `GET /api/shops/{id}/warehouses` | 仓库列表；`PATCH .../warehouses/{wid}` 启用/停用某仓库的库存推送 |
 | `GET /api/shops/{id}/products` | 商品列表（分页、按货号/名称搜索） |
+| `POST /api/shops/{id}/sync-orders` | 立即拉取该店铺订单 |
+| `GET /api/orders` | 订单列表：按店铺、状态（可多选）、仓库、创建时间、货件号/货号/商品名筛选 |
+| `GET /api/orders/statuses` | 各状态订单数 |
+| `GET /api/orders/{id}` | 订单详情（含商品明细和 Ozon 原始数据） |
+| `POST /api/orders/{id}/refresh` | 从 Ozon 重新获取该订单 |
 
-定时任务：每天 `PRODUCT_SYNC_HOUR` 点（UTC）同步所有启用店铺的仓库与商品。所有任务结果写入 `task_logs`，所有 Ozon 调用写入 `api_logs`。
+定时任务：
+- 每 `ORDER_SYNC_INTERVAL_MINUTES` 分钟拉取订单：最近 `ORDER_SYNC_LOOKBACK_DAYS` 天内状态有变化、且创建于最近 `ORDER_SYNC_CREATED_WINDOW_DAYS` 天内的货件；按货件号去重。
+- 每天 `PRODUCT_SYNC_HOUR` 点（UTC）同步所有启用店铺的仓库与商品。
+所有任务结果写入 `task_logs`，所有 Ozon 调用写入 `api_logs`。
 
 ## 数据库迁移
 

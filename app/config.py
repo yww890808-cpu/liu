@@ -26,7 +26,8 @@ class Settings(BaseSettings):
 
     # 定时任务
     order_sync_interval_minutes: int = 10
-    order_sync_lookback_days: int = 3
+    order_sync_lookback_days: int = 3  # 拉取最近 N 天内状态有变化的订单
+    order_sync_created_window_days: int = 90  # 只看最近 N 天内创建的订单（Ozon 要求必须给创建时间范围）
     stock_push_interval_minutes: int = 30
     product_sync_hour: int = 3
 

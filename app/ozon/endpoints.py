@@ -3,3 +3,5 @@
 WAREHOUSE_LIST = "/v1/warehouse/list"
 PRODUCT_LIST = "/v3/product/list"
 PRODUCT_INFO_LIST = "/v3/product/info/list"
+FBS_POSTING_LIST = "/v3/posting/fbs/list"
+FBS_POSTING_GET = "/v3/posting/fbs/get"

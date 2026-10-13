@@ -104,7 +104,13 @@ class Order(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     shop_id: Mapped[int] = mapped_column(ForeignKey("shops.id", ondelete="CASCADE"), index=True)
     posting_number: Mapped[str] = mapped_column(String(64), unique=True)  # 去重键
+    # 拆包发货后 Ozon 会生成新的货件号，这里记录原货件号
+    parent_posting_number: Mapped[str | None] = mapped_column(String(64), index=True)
     status: Mapped[str] = mapped_column(String(64), index=True)
+    substatus: Mapped[str | None] = mapped_column(String(64))
+    ozon_warehouse_id: Mapped[int | None] = mapped_column(BigInteger, index=True)
+    warehouse_name: Mapped[str | None] = mapped_column(String(255))
+    tracking_number: Mapped[str | None] = mapped_column(String(128))  # Ozon 物流生成的单号
     ozon_created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
     shipment_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     raw_json: Mapped[dict | None] = mapped_column(JSON)  # 保留原始数据便于排查

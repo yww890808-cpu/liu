@@ -51,6 +51,7 @@ def api(db, monkeypatch):
     monkeypatch.setattr("app.services.shops.SessionLocal", db.factory)
     monkeypatch.setattr("app.services.task_log.SessionLocal", db.factory)
     monkeypatch.setattr("app.tasks.catalog.SessionLocal", db.factory)
+    monkeypatch.setattr("app.tasks.orders.SessionLocal", db.factory)
 
     def _get_db():
         s = db.factory()
