@@ -1,0 +1,11 @@
+"""Ozon 接口路径集中定义。清单与来源见 docs/ozon-endpoints.md。"""
+
+WAREHOUSE_LIST = "/v1/warehouse/list"
+PRODUCT_LIST = "/v3/product/list"
+PRODUCT_INFO_LIST = "/v3/product/info/list"
+FBS_POSTING_LIST = "/v3/posting/fbs/list"
+FBS_POSTING_GET = "/v3/posting/fbs/get"
+FBS_SHIP = "/v4/posting/fbs/ship"
+FBS_PACKAGE_LABEL = "/v2/posting/fbs/package-label"
+FBS_STOCKS_BY_WAREHOUSE = "/v1/product/info/stocks-by-warehouse/fbs"
+STOCKS_UPDATE = "/v2/products/stocks"

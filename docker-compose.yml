@@ -1,0 +1,57 @@
+# 一键启动：docker compose up -d --build
+x-app: &app
+  build: .
+  env_file: .env
+  environment:
+    DATABASE_URL: postgresql+psycopg://ozon:ozon@postgres:5432/ozon
+    REDIS_URL: redis://redis:6379/0
+    LABEL_DIR: /srv/data/labels
+  volumes:
+    - ./data/labels:/srv/data/labels
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  restart: unless-stopped
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ozon
+      POSTGRES_PASSWORD: ozon
+      POSTGRES_DB: ozon
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ozon"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # 启动前自动执行数据库迁移
+  api:
+    <<: *app
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    ports:
+      - "8000:8000"
+
+  worker:
+    <<: *app
+    command: celery -A app.tasks.celery_app worker -l info
+
+  beat:
+    <<: *app
+    command: celery -A app.tasks.celery_app beat -l info
+
+volumes:
+  pgdata:

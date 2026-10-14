@@ -1,0 +1,71 @@
+"""测试公共夹具：每个测试使用独立的内存 SQLite，密钥使用临时值。"""
+import pytest
+from cryptography.fernet import Fernet
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine, event
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
+
+from app.config import get_settings
+from app.db.models import Base
+from app.db.session import get_db
+
+_FERNET_KEY = Fernet.generate_key().decode()
+
+
+@pytest.fixture(autouse=True)
+def _test_settings(monkeypatch):
+    monkeypatch.setenv("FERNET_KEY", _FERNET_KEY)
+    monkeypatch.setenv("JWT_SECRET", "test-secret-test-secret-test-secret")
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
+
+
+@pytest.fixture
+def db():
+    engine = create_engine(
+        "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
+    )
+
+    # SQLite 默认不校验外键，开启以贴近 PostgreSQL 行为
+    @event.listens_for(engine, "connect")
+    def _fk_on(dbapi_conn, _):
+        dbapi_conn.execute("PRAGMA foreign_keys=ON")
+
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(bind=engine, expire_on_commit=False)
+    session = factory()
+    session.factory = factory  # 供需要独立会话的代码（如 api_logs 写入）使用
+    yield session
+    session.close()
+    engine.dispose()
+
+
+@pytest.fixture
+def api(db, monkeypatch):
+    """已登录的测试客户端；所有数据库访问都指向测试库。"""
+    from app.main import app
+    from app.services.auth import create_user
+
+    monkeypatch.setattr("app.services.shops.SessionLocal", db.factory)
+    monkeypatch.setattr("app.services.task_log.SessionLocal", db.factory)
+    monkeypatch.setattr("app.tasks.catalog.SessionLocal", db.factory)
+    monkeypatch.setattr("app.tasks.orders.SessionLocal", db.factory)
+    monkeypatch.setattr("app.tasks.stock.SessionLocal", db.factory)
+
+    def _get_db():
+        s = db.factory()
+        try:
+            yield s
+        finally:
+            s.close()
+
+    app.dependency_overrides[get_db] = _get_db
+    create_user(db, "admin", "password123")
+    client = TestClient(app)
+    token = client.post("/api/auth/login",
+                        data={"username": "admin", "password": "password123"}).json()["access_token"]
+    client.headers["Authorization"] = f"Bearer {token}"
+    yield client
+    app.dependency_overrides.clear()
