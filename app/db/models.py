@@ -1,11 +1,12 @@
 """数据模型。"""
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 
 from sqlalchemy import (
     JSON,
     BigInteger,
     Boolean,
+    Date,
     DateTime,
     ForeignKey,
     Integer,
@@ -179,3 +180,72 @@ class TaskLog(Base):
     message: Mapped[str | None] = mapped_column(Text)
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+# ---------------- 选品（第三方市场数据） ----------------
+
+class MarketCategory(Base):
+    """关注的 Ozon 类目：每天抓取其中销售额靠前的商品。"""
+
+    __tablename__ = "market_categories"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    path: Mapped[str] = mapped_column(String(512), unique=True)  # 数据服务中的类目路径
+    name: Mapped[str] = mapped_column(String(255))
+    top_n: Mapped[int] = mapped_column(Integer, default=500)  # 每天抓取销售额前 N 个商品
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    last_fetched_date: Mapped[date | None] = mapped_column(Date)  # 已抓取到的最近日期
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class MarketProduct(Base):
+    """Ozon 全平台商品（来自第三方数据服务，不一定是自己店铺的）。"""
+
+    __tablename__ = "market_products"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    ozon_sku: Mapped[int] = mapped_column(BigInteger, unique=True)
+    name: Mapped[str | None] = mapped_column(String(1024))
+    brand: Mapped[str | None] = mapped_column(String(255))
+    seller: Mapped[str | None] = mapped_column(String(255))
+    thumb: Mapped[str | None] = mapped_column(String(1024))  # 主图地址
+    category_id: Mapped[int | None] = mapped_column(
+        ForeignKey("market_categories.id", ondelete="SET NULL"), index=True)
+    first_seen: Mapped[date] = mapped_column(Date)
+    last_seen: Mapped[date] = mapped_column(Date, index=True)
+    is_favorite: Mapped[bool] = mapped_column(Boolean, default=False, index=True)  # 候选商品
+    note: Mapped[str | None] = mapped_column(Text)
+
+
+class MarketProductDaily(Base):
+    """商品每日数据快照。"""
+
+    __tablename__ = "market_product_daily"
+    __table_args__ = (UniqueConstraint("product_id", "day", name="uq_market_product_day"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    product_id: Mapped[int] = mapped_column(ForeignKey("market_products.id", ondelete="CASCADE"), index=True)
+    day: Mapped[date] = mapped_column(Date, index=True)
+    price: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
+    sales: Mapped[int] = mapped_column(Integer, default=0)
+    revenue: Mapped[Decimal] = mapped_column(Numeric(16, 2), default=0)
+    stock: Mapped[int | None] = mapped_column(Integer)
+    rating: Mapped[Decimal | None] = mapped_column(Numeric(3, 2))
+    reviews: Mapped[int | None] = mapped_column(Integer)
+
+
+class MarketCategoryDaily(Base):
+    """类目每日汇总（整个类目的销量、销售额、在售商品数、卖家数）。"""
+
+    __tablename__ = "market_category_daily"
+    __table_args__ = (UniqueConstraint("category_id", "day", name="uq_market_category_day"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    category_id: Mapped[int] = mapped_column(ForeignKey("market_categories.id", ondelete="CASCADE"), index=True)
+    day: Mapped[date] = mapped_column(Date)
+    sales: Mapped[int | None] = mapped_column(Integer)
+    revenue: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
+    items: Mapped[int | None] = mapped_column(Integer)
+    items_with_sales: Mapped[int | None] = mapped_column(Integer)
+    sellers: Mapped[int | None] = mapped_column(Integer)
+    avg_price: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))

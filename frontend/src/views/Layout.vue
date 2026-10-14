@@ -6,6 +6,7 @@
         <el-menu-item index="orders" :route="{ name: 'orders' }">订单</el-menu-item>
         <el-menu-item index="stock" :route="{ name: 'stock' }">库存</el-menu-item>
         <el-menu-item index="shops" :route="{ name: 'shops' }">店铺</el-menu-item>
+        <el-menu-item index="market" :route="{ name: 'market' }">选品</el-menu-item>
         <el-menu-item index="logs" :route="{ name: 'logs' }">日志</el-menu-item>
       </el-menu>
       <div class="user">

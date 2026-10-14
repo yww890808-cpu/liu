@@ -2,7 +2,7 @@
 
 内部使用的 Ozon FBS 店铺自动化后台：订单拉取、发货处理、库存同步。需求见 MVP 需求文档。
 
-> MVP（阶段 1–8）已完成。
+> MVP（阶段 1–8）与选品（阶段 9）已完成。
 > - **部署**：[docs/deploy.md](docs/deploy.md)（自己电脑 / 云服务器 HTTPS、更新、备份恢复、常见问题）
 > - **首次接入真实店铺**：[docs/go-live-checklist.md](docs/go-live-checklist.md)
 > - Ozon 接口清单：[docs/ozon-endpoints.md](docs/ozon-endpoints.md)
@@ -43,6 +43,7 @@ docker compose exec api python -m app.cli create-user admin
 - 订单：按店铺/状态/时间筛选，查看详情，备货（支持拆包）、批量备货，下载/批量打印面单
 - 库存：每个商品在各仓库的库存一屏查看，直接修改后保存，手动推送或从 Ozon 读取
 - 店铺：添加/编辑/删除店铺，测试连接，同步商品，立即拉取订单，开关仓库库存推送
+- 选品：关注 Ozon 类目，每天自动抓取全平台商品销量，按销量/销售额/周增长/评论增长排行，查看商品与类目走势，标记候选商品
 - 日志：任务执行记录、Ozon 接口调用记录（可只看失败）
 
 同一 Wi-Fi 下的手机可以打开 `http://电脑的局域网IP:8000` 使用（订单页在手机上为卡片布局）。
@@ -119,6 +120,26 @@ celery -A app.tasks.celery_app beat -l info
 
 **`DRY_RUN=true`（默认）时备货只在 `task_logs`（`ship_dry_run`）中记录将要提交的内容，不调用 Ozon。**
 
+## 选品（第三方数据：MPStats）
+
+Ozon 官方的全平台数据接口（Statistics API）不对卖家开放，因此选品数据来自第三方服务 MPStats（销量、销售额为其估算值）。
+
+1. 在 https://mpstats.io 开通包含 API 的订阅，在个人中心“API token”处复制 token。
+2. 填入 `.env` 的 `MPSTATS_TOKEN=`，执行 `docker compose up -d`。
+3. 管理后台“选品 → 关注类目 → 添加类目”：输入俄语关键词搜索类目（如 `кружки`），设置每天抓取销售额前 N 的商品。
+4. 添加后自动回补最近 `MARKET_BACKFILL_DAYS` 天（默认 14）；之后每天 `MARKET_FETCH_HOUR` 点（UTC，默认 5 点 = 莫斯科 8 点）抓取前一天的数据。数据服务尚未出数的日期会在下次自动重试。
+5. “商品排行”中可按 7/30 天销量、30 天销售额、周增长（近 7 天对比前 7 天）、评论增长、价格等排序筛选；点击商品查看每日销量、价格、评论走势；★ 标记候选并写备注。
+
+调用量：每个类目每天约 2 次调用（商品列表 + 类目汇总），回补时每天 1 次。剩余额度显示在选品页顶部。
+
+| 接口 | 说明 |
+|---|---|
+| `GET /api/market/status` | 数据服务配置情况与剩余调用额度 |
+| `GET /api/market/catalog?q=` | 搜索 Ozon 类目 |
+| `GET/POST /api/market/categories` | 关注类目列表 / 添加；`PATCH`、`DELETE`、`POST .../fetch`、`GET .../history` |
+| `GET /api/market/products` | 商品排行（筛选、排序、分页） |
+| `GET/PATCH /api/market/products/{id}` | 商品详情与每日走势 / 标记候选、备注 |
+
 ## 库存规则
 
 - 库存按“商品 × 仓库”维护，填写的是**可售数量**（不含已被订单预留的部分），Ozon 会自行扣减新订单。
@@ -134,7 +155,7 @@ celery -A app.tasks.celery_app beat -l info
 |---|---|---|
 | 1–7 | 骨架、API 封装、店铺/商品、订单、发货、库存同步、管理后台 | 已完成 |
 | 8 | 整体测试、部署文档、自动备份、安全加固 | 已完成 |
-| 9 | 选品：接入第三方 Ozon 数据服务（如 MPStats、Moneyplace），每日查看全平台商品销量 | MVP 完成后开发，需先选定服务商并提供 API 文档与密钥 |
+| 9 | 选品：接入 MPStats，每日抓取关注类目的全平台商品销量并分析 | 已完成（需配置 `MPSTATS_TOKEN`） |
 
 ## 数据库迁移
 
