@@ -2,7 +2,7 @@
 
 内部使用的 Ozon FBS 店铺自动化后台：订单拉取、发货处理、库存同步。需求见 MVP 需求文档。
 
-> 当前进度：阶段 1–6 已完成（骨架、Ozon API 封装、店铺管理 + 商品/仓库同步、订单拉取、发货、库存同步）。接口清单见 `docs/ozon-endpoints.md`（待确认）。
+> 当前进度：阶段 1–7 已完成（骨架、Ozon API 封装、店铺/商品、订单、发货、库存同步、管理后台页面）。接口清单见 `docs/ozon-endpoints.md`（待确认）。
 
 ## 目录结构
 
@@ -16,7 +16,7 @@ app/
   api/             后台接口路由
   tasks/           Celery 应用与定时任务
   utils/           加密、日志等工具
-frontend/          Vue 3 管理后台（阶段 7）
+frontend/          Vue 3 + Element Plus 管理后台（构建后由后端在同一端口提供）
 migrations/        Alembic 迁移
 tests/             单元测试
 ```
@@ -35,7 +35,16 @@ curl http://localhost:8000/health      # {"status":"ok","dry_run":true}
 docker compose exec api python -m app.cli create-user admin
 ```
 
-接口文档（可直接在浏览器里试用）：http://localhost:8000/docs ，先点右上角 Authorize 登录。
+**管理后台：浏览器打开 http://localhost:8000 ，用上面创建的账号登录。**
+
+- 订单：按店铺/状态/时间筛选，查看详情，备货（支持拆包）、批量备货，下载/批量打印面单
+- 库存：每个商品在各仓库的库存一屏查看，直接修改后保存，手动推送或从 Ozon 读取
+- 店铺：添加/编辑/删除店铺，测试连接，同步商品，立即拉取订单，开关仓库库存推送
+- 日志：任务执行记录、Ozon 接口调用记录（可只看失败）
+
+同一 Wi-Fi 下的手机可以打开 `http://电脑的局域网IP:8000` 使用（订单页在手机上为卡片布局）。
+
+接口文档（开发调试用）：http://localhost:8000/docs
 
 会启动 5 个服务：`postgres`、`redis`、`api`（启动前自动执行 `alembic upgrade head`）、`worker`（Celery）、`beat`（Celery 定时调度）。
 compose 中会覆盖 `DATABASE_URL` / `REDIS_URL` 指向容器内服务，`.env` 里的这两项只用于本地开发。
@@ -49,6 +58,13 @@ cp .env.example .env          # 默认使用 SQLite: ./dev.db
 alembic upgrade head
 uvicorn app.main:app --reload
 pytest
+```
+
+前端开发（热更新，接口自动转发到 8000 端口）：
+
+```bash
+cd frontend && npm install && npm run dev     # 打开 http://localhost:5173
+npm run build                                  # 构建到 frontend/dist，后端启动时自动提供
 ```
 
 需要 Celery 时本地另起 Redis，然后：
@@ -82,6 +98,7 @@ celery -A app.tasks.celery_app beat -l info
 | `PUT /api/shops/{id}/stocks` | 批量修改本地库存 `[{product_id, warehouse_id, local_stock}]` |
 | `POST /api/shops/{id}/stocks/push` | 立即推送待同步库存 |
 | `POST /api/shops/{id}/stocks/refresh` | 从 Ozon 读取当前库存（只读） |
+| `GET /api/logs/tasks`、`GET /api/logs/api` | 任务执行记录、Ozon 接口调用记录 |
 
 定时任务：
 - 每 `ORDER_SYNC_INTERVAL_MINUTES` 分钟拉取订单：最近 `ORDER_SYNC_LOOKBACK_DAYS` 天内状态有变化、且创建于最近 `ORDER_SYNC_CREATED_WINDOW_DAYS` 天内的货件；按货件号去重。
@@ -111,8 +128,7 @@ celery -A app.tasks.celery_app beat -l info
 
 | 阶段 | 内容 | 状态 |
 |---|---|---|
-| 1–6 | 骨架、API 封装、店铺/商品、订单、发货、库存同步 | 已完成 |
-| 7 | 管理后台前端 | 待开发 |
+| 1–7 | 骨架、API 封装、店铺/商品、订单、发货、库存同步、管理后台 | 已完成 |
 | 8 | 整体测试、部署文档 | 待开发 |
 | 9 | 选品：接入第三方 Ozon 数据服务（如 MPStats、Moneyplace），每日查看全平台商品销量 | MVP 完成后开发，需先选定服务商并提供 API 文档与密钥 |
 

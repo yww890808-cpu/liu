@@ -1,0 +1,14 @@
+html, body, #app { margin: 0; height: 100%; }
+body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f5f7fa; color: #303133; }
+.page-title { margin: 0 0 16px; font-size: 20px; font-weight: 600; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.toolbar .spacer { flex: 1; }
+.card { background: #fff; border-radius: 8px; padding: 16px; }
+.muted { color: #909399; font-size: 12px; }
+.mono { font-family: Menlo, Consolas, monospace; }
+.pager { margin-top: 12px; display: flex; justify-content: flex-end; }
+@media (max-width: 768px) {
+  .el-dialog { width: 94% !important; }
+  .el-main { padding: 10px !important; }
+  .card { padding: 10px; }
+}
