@@ -6,3 +6,4 @@ __pycache__
 .git
 frontend/node_modules
 data
+frontend/dist

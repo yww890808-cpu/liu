@@ -1,7 +1,15 @@
 """测试公共夹具：每个测试使用独立的内存 SQLite，密钥使用临时值。"""
-import pytest
+import os
+
 from cryptography.fernet import Fernet
-from fastapi.testclient import TestClient
+
+# 必须在导入 app 之前设置：应用启动时会校验密钥
+_FERNET_KEY = Fernet.generate_key().decode()
+_JWT_SECRET = "test-secret-test-secret-test-secret"
+os.environ.update(FERNET_KEY=_FERNET_KEY, JWT_SECRET=_JWT_SECRET, DATABASE_URL="sqlite://")
+
+import pytest  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -10,13 +18,11 @@ from app.config import get_settings
 from app.db.models import Base
 from app.db.session import get_db
 
-_FERNET_KEY = Fernet.generate_key().decode()
-
 
 @pytest.fixture(autouse=True)
 def _test_settings(monkeypatch):
     monkeypatch.setenv("FERNET_KEY", _FERNET_KEY)
-    monkeypatch.setenv("JWT_SECRET", "test-secret-test-secret-test-secret")
+    monkeypatch.setenv("JWT_SECRET", _JWT_SECRET)
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()
@@ -46,7 +52,7 @@ def db():
 def api(db, monkeypatch):
     """已登录的测试客户端；所有数据库访问都指向测试库。"""
     from app.main import app
-    from app.services.auth import create_user
+    from app.services.auth import create_user, login_throttle
 
     monkeypatch.setattr("app.services.shops.SessionLocal", db.factory)
     monkeypatch.setattr("app.services.task_log.SessionLocal", db.factory)
@@ -69,3 +75,4 @@ def api(db, monkeypatch):
     client.headers["Authorization"] = f"Bearer {token}"
     yield client
     app.dependency_overrides.clear()
+    login_throttle._failures.clear()

@@ -1,0 +1,27 @@
+# 云服务器部署：在默认配置上叠加，用 Caddy 提供 HTTPS（自动申请证书）
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+# 需要在 .env 中设置 DOMAIN=你的域名，并把域名解析到服务器公网 IP。
+services:
+  api:
+    # 不再直接对外暴露 8000 端口，只允许本机访问；外部统一走 Caddy 的 443
+    ports: !override
+      - "127.0.0.1:8000:8000"
+    # 信任 Caddy 转发的真实客户端 IP（登录限流按 IP 计算）
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips='*'"
+
+  caddy:
+    image: caddy:2-alpine
+    environment:
+      DOMAIN: ${DOMAIN:?请在 .env 中设置 DOMAIN}
+    command: caddy reverse-proxy --from ${DOMAIN} --to api:8000
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
