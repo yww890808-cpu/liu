@@ -45,3 +45,19 @@ def test_order_items_cascade(db):
     db.delete(order)
     db.commit()
     assert db.query(OrderItem).count() == 0
+
+
+@pytest.mark.parametrize("fernet, jwt_secret, msg", [
+    ("", "x" * 32, "FERNET_KEY 未设置"),
+    ("not-a-key", "x" * 32, "FERNET_KEY 格式不正确"),
+    (None, "short", "JWT_SECRET"),
+])
+def test_check_secrets(fernet, jwt_secret, msg):
+    from cryptography.fernet import Fernet
+
+    from app.config import Settings, check_secrets
+
+    s = Settings(_env_file=None, fernet_key=Fernet.generate_key().decode() if fernet is None else fernet,
+                 jwt_secret=jwt_secret)
+    with pytest.raises(RuntimeError, match=msg):
+        check_secrets(s)

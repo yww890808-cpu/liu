@@ -2,8 +2,9 @@
 from celery import Celery
 from celery.schedules import crontab
 
-from app.config import get_settings
+from app.config import check_secrets, get_settings
 
+check_secrets()
 settings = get_settings()
 
 celery_app = Celery("ozon", broker=settings.redis_url, backend=settings.redis_url,

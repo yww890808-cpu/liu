@@ -41,3 +41,22 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
+
+def check_secrets(settings: Settings | None = None) -> None:
+    """启动时校验必填密钥，配置错误时给出明确提示而不是运行到一半才报错。"""
+    from cryptography.fernet import Fernet
+
+    settings = settings or get_settings()
+    problems = []
+    if not settings.fernet_key:
+        problems.append("FERNET_KEY 未设置")
+    else:
+        try:
+            Fernet(settings.fernet_key.encode())
+        except (ValueError, TypeError):
+            problems.append("FERNET_KEY 格式不正确（应为 44 位 base64 字符串，按 .env.example 中的命令生成）")
+    if len(settings.jwt_secret) < 16:
+        problems.append("JWT_SECRET 未设置或太短（至少 16 位）")
+    if problems:
+        raise RuntimeError("配置错误：" + "；".join(problems) + "。请检查 .env 文件。")

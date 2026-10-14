@@ -6,8 +6,9 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api import auth, logs, orders, shops, stock
-from app.config import get_settings
+from app.config import check_secrets, get_settings
 
+check_secrets()
 app = FastAPI(title="Ozon 自动化平台", version="0.1.0")
 app.include_router(auth.router)
 app.include_router(shops.router)

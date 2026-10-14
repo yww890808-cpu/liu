@@ -1,4 +1,7 @@
 """登录鉴权：bcrypt 密码哈希 + JWT。"""
+import threading
+import time
+from collections import defaultdict, deque
 from datetime import timedelta
 
 import bcrypt
@@ -52,3 +55,38 @@ def create_user(db: Session, username: str, password: str) -> User:
     db.add(user)
     db.commit()
     return user
+
+
+class LoginThrottle:
+    """登录失败限流（进程内）：同一用户名或同一 IP 在窗口期内失败过多次后暂时禁止登录。"""
+
+    def __init__(self, max_failures: int = 5, window_sec: int = 900, clock=time.monotonic):
+        self.max_failures = max_failures
+        self.window_sec = window_sec
+        self._clock = clock
+        self._failures: dict[str, deque] = defaultdict(deque)
+        self._lock = threading.Lock()
+
+    def _recent(self, key: str) -> deque:
+        q = self._failures[key]
+        cutoff = self._clock() - self.window_sec
+        while q and q[0] < cutoff:
+            q.popleft()
+        return q
+
+    def blocked(self, *keys: str) -> bool:
+        with self._lock:
+            return any(len(self._recent(k)) >= self.max_failures for k in keys)
+
+    def fail(self, *keys: str) -> None:
+        with self._lock:
+            for k in keys:
+                self._recent(k).append(self._clock())
+
+    def success(self, *keys: str) -> None:
+        with self._lock:
+            for k in keys:
+                self._failures.pop(k, None)
+
+
+login_throttle = LoginThrottle()

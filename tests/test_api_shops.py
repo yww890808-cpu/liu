@@ -121,3 +121,24 @@ def test_toggle_warehouse(api, db):
     assert r.json()["is_active"] is False
     # 不能跨店铺修改
     assert api.patch(f"/api/shops/{other}/warehouses/{wh.id}", json={"is_active": True}).status_code == 404
+
+
+def test_login_throttled_after_repeated_failures(api):
+    anon = TestClient(app)
+    for _ in range(5):
+        assert anon.post("/api/auth/login", data={"username": "admin", "password": "bad"}).status_code == 401
+    r = anon.post("/api/auth/login", data={"username": "admin", "password": "password123"})
+    assert r.status_code == 429 and "15 分钟" in r.json()["detail"]
+
+
+def test_login_throttle_window_expires():
+    from app.services.auth import LoginThrottle
+
+    now = [0.0]
+    t = LoginThrottle(max_failures=2, window_sec=60, clock=lambda: now[0])
+    t.fail("u"); t.fail("u")
+    assert t.blocked("u")
+    now[0] = 61
+    assert not t.blocked("u")
+    t.fail("u"); t.success("u")
+    assert not t.blocked("u")
