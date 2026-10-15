@@ -5,7 +5,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import auth, logs, orders, shops, stock
+from app.api import auth, logs, market, orders, shops, stock
 from app.config import check_secrets, get_settings
 
 check_secrets()
@@ -15,6 +15,7 @@ app.include_router(shops.router)
 app.include_router(orders.router)
 app.include_router(stock.router)
 app.include_router(logs.router)
+app.include_router(market.router)
 
 
 @app.get("/health")

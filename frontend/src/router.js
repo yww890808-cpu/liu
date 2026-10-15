@@ -12,6 +12,7 @@ const router = createRouter({
         { path: 'orders', name: 'orders', component: () => import('./views/Orders.vue'), meta: { title: '订单' } },
         { path: 'stock', name: 'stock', component: () => import('./views/Stock.vue'), meta: { title: '库存' } },
         { path: 'shops', name: 'shops', component: () => import('./views/Shops.vue'), meta: { title: '店铺' } },
+        { path: 'market', name: 'market', component: () => import('./views/Market.vue'), meta: { title: '选品' } },
         { path: 'logs', name: 'logs', component: () => import('./views/Logs.vue'), meta: { title: '日志' } },
       ],
     },

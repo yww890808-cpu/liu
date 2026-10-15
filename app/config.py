@@ -33,6 +33,14 @@ class Settings(BaseSettings):
 
     label_dir: str = "./data/labels"
     static_dir: str = "./frontend/dist"  # 前端构建产物目录
+
+    # 选品：第三方数据服务 MPStats（https://mpstats.io/userpanel 的 API token）
+    mpstats_token: str = ""
+    mpstats_base_url: str = "https://mpstats.io/api/"
+    mpstats_rate_limit_per_sec: float = 1.0
+    mpstats_include_fbs: bool = True  # 统计中包含 FBS 卖家（跨境卖家多为 FBS）
+    market_fetch_hour: int = 5  # 每天几点（UTC）抓取前一天的数据
+    market_backfill_days: int = 14  # 新增类目时回补的天数
     # 备货后 Ozon 需要一段时间生成面单：首次获取延迟与最多尝试次数
     label_fetch_delay_sec: int = 60
     label_fetch_max_tries: int = 5

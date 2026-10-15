@@ -34,6 +34,7 @@ export const TASK_NAME = {
   push_stock: '推送库存',
   ship_dry_run: '备货（试运行）',
   stock_push_dry_run: '推送库存（试运行）',
+  market_fetch: '选品数据抓取',
 }
 
 export const statusText = (s) => ORDER_STATUS[s] || s
