@@ -3,9 +3,44 @@
 内部使用的 Ozon FBS 店铺自动化后台：订单拉取、发货处理、库存同步。需求见 MVP 需求文档。
 
 > MVP（阶段 1–8）与选品（阶段 9）已完成。
+> - **用 Codex 一键安装 / 更新**：[docs/codex-install.md](docs/codex-install.md)（复制整段发给 Codex 即可）
 > - **部署**：[docs/deploy.md](docs/deploy.md)（自己电脑 / 云服务器 HTTPS、更新、备份恢复、常见问题）
 > - **首次接入真实店铺**：[docs/go-live-checklist.md](docs/go-live-checklist.md)
 > - Ozon 接口清单：[docs/ozon-endpoints.md](docs/ozon-endpoints.md)
+
+## 一键安装（用 Codex）
+
+先安装并打开 [Docker Desktop](https://www.docker.com/products/docker-desktop/)，然后把下面整段复制发给电脑上的 Codex（代码框右上角有复制按钮）。准备事项、安装后步骤、更新方法见 [docs/codex-install.md](docs/codex-install.md)。
+
+```text
+请帮我在这台电脑上安装并启动一个项目，按顺序做，每一步告诉我结果，遇到报错先停下来告诉我原因，不要自己乱改。
+
+1. 运行 docker info 检查 Docker 是否在运行。没有运行就停下来提醒我打开 Docker Desktop。
+2. 在当前文件夹下载代码并进入：
+   git clone https://github.com/yww890808-cpu/liu.git
+   cd liu
+   如果 liu 文件夹已经存在，改为进入 liu 后执行 git pull，然后直接跳到第 5 步。
+3. 把 .env.example 复制一份，命名为 .env。
+4. 运行下面这条命令两次，得到两串随机字符：
+   docker run --rm python:3.11-slim python -c "import secrets,base64;print(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode())"
+   第一串填到 .env 的 FERNET_KEY= 后面，第二串填到 JWT_SECRET= 后面。
+   其他配置不要改，DRY_RUN 必须保持 true。
+5. 启动：docker compose up -d --build（第一次需要几分钟）
+6. 等 30 秒后检查：
+   - docker compose ps 里 6 个服务（postgres、redis、api、worker、beat、backup）都在运行
+   - 访问 http://localhost:8000/health 返回 "status":"ok"
+   有服务没起来就运行 docker compose logs api 把报错告诉我。
+7. 完成后提醒我两件事：
+   - 自己运行 docker compose exec api python -m app.cli create-user admin 创建登录账号（需要我手动输入密码）
+   - 把 .env 文件另外备份一份到安全的地方，里面的 FERNET_KEY 丢了会导致已保存的店铺密钥无法解密
+
+注意：
+- 不要修改项目里的任何代码文件
+- 不要在回复里显示 .env 中的密钥内容
+- 不要执行 git commit、git push
+```
+
+装好后：运行上面第 7 步的命令创建账号，浏览器打开 http://localhost:8000 登录。
 
 ## 目录结构
 

@@ -13,15 +13,17 @@
 
 ## A. 自己的电脑（Windows / Mac）
 
+> 也可以让 Codex 代你完成下面的步骤：见 [用 Codex 一键安装](codex-install.md)。
+
 ### 1. 安装 Docker Desktop
 https://www.docker.com/products/docker-desktop/ ，安装后打开，等它显示 Running。
 
 ### 2. 下载代码
 ```bash
-git clone -b claude/ozon-mvp-phase1 https://github.com/yww890808-cpu/liu.git
+git clone https://github.com/yww890808-cpu/liu.git
 cd liu
 ```
-没有 git 时，可在 GitHub 网页切换到该分支后 Code → Download ZIP 并解压。
+没有 git 时，可在 GitHub 仓库页面点 Code → Download ZIP 并解压。
 
 ### 3. 生成配置
 ```bash
@@ -61,7 +63,7 @@ curl -fsSL https://get.docker.com | sh
 
 ### 2. 下载代码并配置
 ```bash
-git clone -b claude/ozon-mvp-phase1 https://github.com/yww890808-cpu/liu.git
+git clone https://github.com/yww890808-cpu/liu.git
 cd liu
 cp .env.example .env
 python3 -c "import secrets,base64;print(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode())"   # 运行两次
