@@ -172,3 +172,28 @@ alembic upgrade head
 - 启动时校验 `FERNET_KEY` / `JWT_SECRET`，缺失或格式错误直接报错退出。
 - 同一用户名或 IP 连续输错密码 5 次，锁定 15 分钟。
 - 云服务器部署时只开放 80/443（Caddy 自动 HTTPS），后端端口仅本机可访问。
+一键安装 复制命令 请帮我在这台电脑上安装并启动一个项目，按顺序做，每一步告诉我结果，遇到报错先停下来告诉我原因，不要自己乱改。
+
+1. 运行 docker info 检查 Docker 是否在运行。没有运行就停下来提醒我打开 Docker Desktop。
+2. 在当前文件夹下载代码并进入：
+   git clone https://github.com/yww890808-cpu/liu.git
+   cd liu
+   如果 liu 文件夹已经存在，改为进入 liu 后执行 git pull，然后直接跳到第 5 步。
+3. 把 .env.example 复制一份，命名为 .env。
+4. 运行下面这条命令两次，得到两串随机字符：
+   docker run --rm python:3.11-slim python -c "import secrets,base64;print(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode())"
+   第一串填到 .env 的 FERNET_KEY= 后面，第二串填到 JWT_SECRET= 后面。
+   其他配置不要改，DRY_RUN 必须保持 true。
+5. 启动：docker compose up -d --build（第一次需要几分钟）
+6. 等 30 秒后检查：
+   - docker compose ps 里 6 个服务（postgres、redis、api、worker、beat、backup）都在运行
+   - 访问 http://localhost:8000/health 返回 "status":"ok"
+   有服务没起来就运行 docker compose logs api 把报错告诉我。
+7. 完成后提醒我两件事：
+   - 自己运行 docker compose exec api python -m app.cli create-user admin 创建登录账号（需要我手动输入密码）
+   - 把 .env 文件另外备份一份到安全的地方，里面的 FERNET_KEY 丢了会导致已保存的店铺密钥无法解密
+
+注意：
+- 不要修改项目里的任何代码文件
+- 不要在回复里显示 .env 中的密钥内容
+- 不要执行 git commit、git push
