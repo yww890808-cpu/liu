@@ -34,11 +34,11 @@ docker run --rm python:3.11-slim python -c "import secrets,base64;print(base64.u
 
 > **`FERNET_KEY` 务必另外保存一份**（比如记在密码管理器里）。丢失后已保存的店铺 Api-Key 无法解密，只能重新录入。
 
-### 4. 启动并创建账号
+### 4. 启动
 ```bash
 docker compose up -d --build
-docker compose exec api python -m app.cli create-user admin
 ```
+默认不需要登录。需要登录时，在 `.env` 设置 `LOGIN_REQUIRED=true`，执行 `docker compose up -d`，再运行 `docker compose exec api python -m app.cli create-user admin` 创建账号。
 
 ### 5. 打开
 浏览器访问 http://localhost:8000 。
@@ -74,13 +74,14 @@ nano .env
 ### 3. 启动
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
-docker compose exec api python -m app.cli create-user admin
+docker compose -f docker-compose.yml -f docker-compose.prod.yml exec api python -m app.cli create-user admin
 ```
+**云服务器部署始终需要登录**（不受 `.env` 中 `LOGIN_REQUIRED` 影响），上面第二条命令用于创建登录账号。
 Caddy 会自动申请 HTTPS 证书（需要域名已解析、80/443 已放行）。之后在任何地方用浏览器打开 `https://ozon.你的域名.com`。
 
 生产配置的区别：
 - 只有 Caddy 对外开放 80/443，后端 8000 端口只允许服务器本机访问；
-- 登录连续输错 5 次密码会被锁定 15 分钟；
+- 必须登录才能使用，连续输错 5 次密码会被锁定 15 分钟；
 - 每天自动备份数据库。
 
 > 需要 Docker Compose 2.24 或更高版本（`docker compose version` 查看）。上面的安装方式会装最新版。
@@ -125,7 +126,7 @@ docker compose start api worker beat
 ### 修改配置
 编辑 `.env` 后执行 `docker compose up -d` 使配置生效。
 
-### 增加登录账号 / 忘记密码
+### 增加登录账号 / 忘记密码（开启登录时）
 ```bash
 docker compose exec api python -m app.cli create-user 新用户名
 ```

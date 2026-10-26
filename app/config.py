@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     fernet_key: str = ""
     jwt_secret: str = ""
     jwt_expire_minutes: int = 720
+    # 是否需要登录。默认关闭：打开网址直接进入后台（适合只在自己电脑上使用）。
+    # 部署到公网（云服务器）时务必开启，否则任何人都能操作店铺。
+    login_required: bool = False
 
     # Ozon API
     ozon_base_url: str = "https://api-seller.ozon.ru"

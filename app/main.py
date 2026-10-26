@@ -20,7 +20,8 @@ app.include_router(market.router)
 
 @app.get("/health")
 def health() -> dict:
-    return {"status": "ok", "dry_run": get_settings().dry_run}
+    settings = get_settings()
+    return {"status": "ok", "dry_run": settings.dry_run, "login_required": settings.login_required}
 
 
 # 管理后台前端（frontend 构建产物）。存在时由后端直接提供，前后端同一端口。

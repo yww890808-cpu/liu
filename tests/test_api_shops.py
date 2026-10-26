@@ -142,3 +142,44 @@ def test_login_throttle_window_expires():
     assert not t.blocked("u")
     t.fail("u"); t.success("u")
     assert not t.blocked("u")
+
+
+# ---------- 免登录模式 ----------
+
+def test_no_login_mode_allows_access_without_token(db, monkeypatch):
+    from app.config import get_settings
+    from app.db.session import get_db
+
+    monkeypatch.setenv("LOGIN_REQUIRED", "false")
+    get_settings.cache_clear()
+
+    def _get_db():
+        s = db.factory()
+        try:
+            yield s
+        finally:
+            s.close()
+
+    app.dependency_overrides[get_db] = _get_db
+    try:
+        anon = TestClient(app)
+        assert anon.get("/health").json()["login_required"] is False
+        assert anon.get("/api/shops").status_code == 200
+        r = anon.post("/api/shops", json={"name": "A", "client_id": "1", "api_key": "k-123456"})
+        assert r.status_code == 201
+        assert anon.get("/api/auth/me").json()["username"] == "本机"
+        # 带了无效凭证也不影响
+        assert TestClient(app, headers={"Authorization": "Bearer junk"}).get("/api/shops").status_code == 200
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_login_mode_reported_in_health(api):
+    assert TestClient(app).get("/health").json()["login_required"] is True
+
+
+def test_login_required_by_default_is_off(monkeypatch):
+    from app.config import Settings
+
+    monkeypatch.delenv("LOGIN_REQUIRED", raising=False)
+    assert Settings(_env_file=None).login_required is False
