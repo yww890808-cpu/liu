@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { serverConfig } from './server'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -20,7 +21,13 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
+  const { login_required: loginRequired } = await serverConfig()
+  if (!loginRequired) {
+    // 免登录模式：不显示登录页
+    if (to.name === 'login') return { path: '/' }
+    return
+  }
   if (to.name !== 'login' && !localStorage.getItem('ozon_token')) {
     return { name: 'login', query: { redirect: to.fullPath } }
   }

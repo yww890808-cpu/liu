@@ -30,9 +30,7 @@
    - docker compose ps 里 6 个服务（postgres、redis、api、worker、beat、backup）都在运行
    - 访问 http://localhost:8000/health 返回 "status":"ok"
    有服务没起来就运行 docker compose logs api 把报错告诉我。
-7. 完成后提醒我两件事：
-   - 自己运行 docker compose exec api python -m app.cli create-user admin 创建登录账号（需要我手动输入密码）
-   - 把 .env 文件另外备份一份到安全的地方，里面的 FERNET_KEY 丢了会导致已保存的店铺密钥无法解密
+7. 完成后提醒我：把 .env 文件另外备份一份到安全的地方，里面的 FERNET_KEY 丢了会导致已保存的店铺密钥无法解密。
 
 注意：
 - 不要修改项目里的任何代码文件
@@ -40,7 +38,7 @@
 - 不要执行 git commit、git push
 ```
 
-装好后：运行上面第 7 步的命令创建账号，浏览器打开 http://localhost:8000 登录。
+装好后：浏览器打开 http://localhost:8000 直接进入后台（默认不需要登录）。
 
 ## 目录结构
 
@@ -68,12 +66,12 @@ python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().d
 
 docker compose up -d --build
 curl http://localhost:8000/health      # {"status":"ok","dry_run":true}
-
-# 创建后台登录账号（交互输入密码）
-docker compose exec api python -m app.cli create-user admin
 ```
 
-**管理后台：浏览器打开 http://localhost:8000 ，用上面创建的账号登录。**
+**管理后台：浏览器打开 http://localhost:8000 直接进入（默认不需要登录）。**
+
+> 免登录意味着能打开这个网址的人都能操作店铺。只在自己电脑上用没问题；同一 Wi-Fi 下的其他设备也能访问。
+> 需要登录时在 `.env` 设置 `LOGIN_REQUIRED=true`，并用 `docker compose exec api python -m app.cli create-user admin` 创建账号。云服务器部署默认强制登录。
 
 - 订单：按店铺/状态/时间筛选，查看详情，备货（支持拆包）、批量备货，下载/批量打印面单
 - 库存：每个商品在各仓库的库存一屏查看，直接修改后保存，手动推送或从 Ozon 读取
@@ -118,7 +116,7 @@ celery -A app.tasks.celery_app beat -l info
 
 | 接口 | 说明 |
 |---|---|
-| `POST /api/auth/login` | 登录，返回 JWT |
+| `POST /api/auth/login` | 登录，返回 JWT（仅 `LOGIN_REQUIRED=true` 时需要） |
 | `GET/POST /api/shops` | 店铺列表 / 添加店铺（Api-Key 加密存储，返回时脱敏） |
 | `PATCH/DELETE /api/shops/{id}` | 修改（名称、Api-Key、启用状态）/ 删除店铺 |
 | `POST /api/shops/{id}/test` | 测试店铺凭证是否可用（只读接口） |
@@ -205,5 +203,6 @@ alembic upgrade head
 - 店铺 Api-Key 以 Fernet 密文存库，加密密钥 `FERNET_KEY` 只放环境变量。
 - `DRY_RUN=true`（默认）时，备货、库存推送等会改动线上数据的操作只记录不提交。
 - 启动时校验 `FERNET_KEY` / `JWT_SECRET`，缺失或格式错误直接报错退出。
-- 同一用户名或 IP 连续输错密码 5 次，锁定 15 分钟。
+- 默认免登录（`LOGIN_REQUIRED=false`），适合只在自己电脑上使用；云服务器部署（`docker-compose.prod.yml`）默认强制登录。
+- 开启登录时，同一用户名或 IP 连续输错密码 5 次，锁定 15 分钟。
 - 云服务器部署时只开放 80/443（Caddy 自动 HTTPS），后端端口仅本机可访问。

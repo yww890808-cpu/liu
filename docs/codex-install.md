@@ -33,9 +33,7 @@
    - docker compose ps 里 6 个服务（postgres、redis、api、worker、beat、backup）都在运行
    - 访问 http://localhost:8000/health 返回 "status":"ok"
    有服务没起来就运行 docker compose logs api 把报错告诉我。
-7. 完成后提醒我两件事：
-   - 自己运行 docker compose exec api python -m app.cli create-user admin 创建登录账号（需要我手动输入密码）
-   - 把 .env 文件另外备份一份到安全的地方，里面的 FERNET_KEY 丢了会导致已保存的店铺密钥无法解密
+7. 完成后提醒我：把 .env 文件另外备份一份到安全的地方，里面的 FERNET_KEY 丢了会导致已保存的店铺密钥无法解密。
 
 注意：
 - 不要修改项目里的任何代码文件
@@ -45,12 +43,8 @@
 
 ## Codex 做完后你自己做
 
-1. **创建登录账号**：在 `liu` 文件夹的终端运行下面的命令，按提示输入两次密码（至少 8 位，输入时屏幕不显示是正常的）：
-   ```bash
-   docker compose exec api python -m app.cli create-user admin
-   ```
-2. **登录**：电脑浏览器打开 http://localhost:8000
-3. **接入真实店铺**：按 [首次接入真实店铺检查清单](go-live-checklist.md) 逐项进行，确认无误前保持试运行模式。
+1. **打开后台**：电脑浏览器打开 http://localhost:8000 ，直接进入，不需要用户名和密码。
+2. **接入真实店铺**：按 [首次接入真实店铺检查清单](go-live-checklist.md) 逐项进行，确认无误前保持试运行模式。
 
 ## 以后更新到新版本：发给 Codex
 
@@ -66,6 +60,14 @@
 
 ```text
 在 liu 文件夹的 .env 文件中，把 MPSTATS_TOKEN= 这一行改为 MPSTATS_TOKEN=你的token（其他行不要动），然后运行 docker compose up -d。不要在回复里显示 token。
+```
+
+## 需要登录时（可选）
+
+默认免登录，能打开网址的人都能操作店铺（同一 Wi-Fi 下的设备也能访问）。想加上登录，发给 Codex：
+
+```text
+在 liu 文件夹的 .env 文件中，把 LOGIN_REQUIRED=false 改为 LOGIN_REQUIRED=true（其他行不要动），然后运行 docker compose up -d。完成后提醒我自己运行 docker compose exec api python -m app.cli create-user admin 创建账号。
 ```
 
 ## 遇到问题

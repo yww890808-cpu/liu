@@ -9,7 +9,7 @@
         <el-menu-item index="market" :route="{ name: 'market' }">选品</el-menu-item>
         <el-menu-item index="logs" :route="{ name: 'logs' }">日志</el-menu-item>
       </el-menu>
-      <div class="user">
+      <div v-if="loginRequired" class="user">
         <span class="muted">{{ username }}</span>
         <el-button link @click="logout">退出</el-button>
       </div>
@@ -26,17 +26,20 @@
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http, { auth } from '../api'
+import { serverConfig } from '../server'
 import { loadShops } from '../shops'
 
 const route = useRoute()
 const router = useRouter()
 const dryRun = ref(false)
+const loginRequired = ref(false)
 const username = ref('')
 
 onMounted(async () => {
-  const [health, me] = await Promise.all([http.get('/health'), http.get('/api/auth/me')])
-  dryRun.value = health.data.dry_run
-  username.value = me.data.username
+  const config = await serverConfig()
+  dryRun.value = config.dry_run
+  loginRequired.value = config.login_required
+  if (config.login_required) username.value = (await http.get('/api/auth/me')).data.username
   loadShops()
 })
 

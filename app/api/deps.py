@@ -3,15 +3,22 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
 from app.db.models import Shop, User
 from app.db.session import get_db
 from app.services.auth import user_from_token
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+# auto_error=False：免登录模式下没有凭证也不直接报错
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
+
+# 免登录模式下的当前用户（不写入数据库）
+LOCAL_USER = User(id=0, username="本机")
 
 
-def current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
-    user = user_from_token(db, token)
+def current_user(token: str | None = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
+    if not get_settings().login_required:
+        return LOCAL_USER
+    user = user_from_token(db, token) if token else None
     if user is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "登录已失效",
                             headers={"WWW-Authenticate": "Bearer"})

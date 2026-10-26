@@ -23,6 +23,8 @@ from app.db.session import get_db
 def _test_settings(monkeypatch):
     monkeypatch.setenv("FERNET_KEY", _FERNET_KEY)
     monkeypatch.setenv("JWT_SECRET", _JWT_SECRET)
+    # 已有测试按“需要登录”运行，免登录模式另有专门测试
+    monkeypatch.setenv("LOGIN_REQUIRED", "true")
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()
